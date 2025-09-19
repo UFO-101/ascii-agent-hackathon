@@ -1,8 +1,8 @@
 from PIL import Image
 
 
-def img_to_ascii(img_path: str, ascii_width: int = 200, ascii_height: int = 200):
-    ascii_chars = "@%#*+=-:. "
+def img_to_ascii(img_path: str, ascii_width: int = 200, ascii_height: int = 200) -> str:
+    ascii_chars: str = "@%#*+=-:. "
 
     try:
         img = Image.open(img_path)

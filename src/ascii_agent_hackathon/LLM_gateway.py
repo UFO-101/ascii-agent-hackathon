@@ -51,7 +51,7 @@ def generate_image(
     prompt: str,
     model: str = "gemini-2.5-flash-image-preview",
     save_path: Optional[str] = None,
-    use_cache: bool = True
+    use_cache: bool = True,
 ) -> Optional[Image.Image]:
     """
     Generate an image using LLM Gateway API with caching support.
@@ -114,12 +114,8 @@ def generate_image(
         image.save(cache_path)
 
         # Save metadata
-        metadata = {
-            "prompt": prompt,
-            "model": model,
-            "cache_key": cache_key
-        }
-        with open(metadata_path, 'w') as f:
+        metadata = {"prompt": prompt, "model": model, "cache_key": cache_key}
+        with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
 
     # Save to specified path if requested
@@ -152,59 +148,60 @@ def image_to_base64(image: Union[Image.Image, str]) -> str:
     buffer.seek(0)
 
     # Encode to base64
-    img_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+    img_base64 = base64.b64encode(buffer.read()).decode("utf-8")
     return f"data:image/png;base64,{img_base64}"
 
 
-def generate_future_frame(
+def generate_character_pose(
     input_image: Union[Image.Image, str],
-    seconds_in_future: float = 1.0,
+    pose_description: str,
     model: str = "gemini-2.5-flash-image-preview",
     save_path: Optional[str] = None,
-    use_cache: bool = True
+    use_cache: bool = True,
 ) -> Optional[Image.Image]:
     """
-    Generate an image showing what the input scene would look like after a specified time.
+    Generate a different pose of the same character from an input image.
 
     Args:
         input_image: Either a PIL Image object or path to an image file
-        seconds_in_future: Number of seconds in the future to generate (default: 1.0)
+        pose_description: Description of the desired pose
         model: The model to use for generation
         save_path: Optional path to save the generated image
         use_cache: Whether to use caching (default: True)
 
     Returns:
-        PIL Image object of the future frame, or None if generation failed
+        PIL Image object of the character in new pose, or None if generation failed
     """
     # Convert image to base64
     img_base64 = image_to_base64(input_image)
 
-    # Create prompt for future frame generation
-    prompt = f"""Looking at this image, generate what this exact same scene would look like {seconds_in_future} second{'s' if seconds_in_future != 1 else ''} in the future.
-    Maintain the same perspective, style, and composition.
-    Consider natural motion, physics, and time progression.
-    If there are moving objects, show their natural progression.
-    If it's a static scene, keep it mostly the same with subtle natural changes."""
+    # Create prompt for pose generation
+    prompt = f"""Generate the EXACT same character from this image in a different pose: {pose_description}.
+    IMPORTANT:
+    - Keep the same character, clothing, colors, and art style
+    - Keep the same background
+    - Only change the pose as described
+    - Maintain consistent lighting and perspective
+    - The character should be clearly recognizable as the same one"""
 
-    # Create cache key that includes the image and time parameter
+    # Create cache key that includes the image and pose
     if isinstance(input_image, str):
-        with open(input_image, 'rb') as f:
+        with open(input_image, "rb") as f:
             img_identifier = hashlib.md5(f.read()).hexdigest()[:8]
     elif isinstance(input_image, Image.Image):
         buffer = BytesIO()
         input_image.save(buffer, format="PNG")
         img_identifier = hashlib.md5(buffer.getvalue()).hexdigest()[:8]
     else:
-        # If it's a file-like object or path-like object
         img_identifier = "unknown"
 
-    cache_key = get_cache_key(f"{prompt}_{img_identifier}_{seconds_in_future}", model)
+    cache_key = get_cache_key(f"{prompt}_{img_identifier}_{pose_description}", model)
     cache_path = get_cache_path(cache_key)
     metadata_path = get_cache_metadata_path(cache_key)
 
     # Check cache if enabled
     if use_cache and cache_path.exists():
-        print(f"Using cached future frame ({seconds_in_future}s)")
+        print(f"Using cached pose: {pose_description[:30]}...")
         image = Image.open(cache_path)
 
         if save_path:
@@ -212,25 +209,19 @@ def generate_future_frame(
 
         return image
 
-    # Generate new future frame
-    print(f"Generating future frame ({seconds_in_future}s in the future)...")
+    # Generate new pose
+    print(f"Generating pose: {pose_description[:50]}...")
 
     # Prepare the message with both text and image
-    messages = [{
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": prompt
-            },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": img_base64
-                }
-            }
-        ]
-    }]
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": img_base64}},
+            ],
+        }
+    ]
 
     response: requests.Response = requests.post(
         "https://api.llmgateway.io/v1/chat/completions",
@@ -264,12 +255,12 @@ def generate_future_frame(
 
         # Save metadata
         metadata = {
-            "operation": "future_frame",
-            "seconds_in_future": seconds_in_future,
+            "operation": "character_pose",
+            "pose_description": pose_description,
             "model": model,
-            "cache_key": cache_key
+            "cache_key": cache_key,
         }
-        with open(metadata_path, 'w') as f:
+        with open(metadata_path, "w") as f:
             json.dump(metadata, f, indent=2)
 
     # Save to specified path if requested

@@ -12,14 +12,25 @@ def adjust_brightness(value: int, factor: float) -> int:
     return min(255, max(0, int(value * factor)))
 
 
-def get_brightness_char(brightness: int, detailed: bool = True, invert: bool = False) -> str:
-    """Get ASCII character based on brightness level."""
-    if detailed:
-        # More detailed character set for better gradients
-        ascii_chars = " .·:¦+*#%@█"
-    else:
-        # Simple character set
+def get_brightness_char(brightness: int, style: str = "mixed", invert: bool = False) -> str:
+    """
+    Get ASCII character based on brightness level.
+
+    Args:
+        brightness: Brightness value (0-255)
+        style: Character style - "blocks", "ascii", or "mixed"
+        invert: Whether to invert the character brightness mapping
+    """
+    if style == "blocks":
+        # Pure block/pixel characters for consistent pixel-like appearance
+        ascii_chars = " ░▒▓█"  # Unicode block characters
+        # Alternative: " ▪▫■□▢▣▤▥▦▧▨▩"
+    elif style == "ascii":
+        # Traditional ASCII characters only (no Unicode blocks)
         ascii_chars = " .:-=+*#%@"
+    else:  # mixed (default)
+        # Mix of ASCII and block characters
+        ascii_chars = " .·:¦+*#%@█"
 
     if invert:
         ascii_chars = ascii_chars[::-1]
@@ -34,7 +45,7 @@ def img_to_ascii(
     ascii_height: int = 200,
     colored: bool = True,
     preserve_aspect_ratio: bool = True,
-    detailed_chars: bool = True,
+    char_style: str = "mixed",
     brightness_boost: float = 1.5,
     contrast_boost: float = 1.2,
     invert_chars: bool = False
@@ -48,7 +59,7 @@ def img_to_ascii(
         ascii_height: Height of the ASCII output in characters (ignored if preserve_aspect_ratio=True)
         colored: Whether to use ANSI color codes for colored output
         preserve_aspect_ratio: Whether to maintain the original aspect ratio
-        detailed_chars: Whether to use a more detailed character set
+        char_style: Character style - "blocks" (█▓▒░), "ascii" (@%#*+=:-.), or "mixed" (both)
         brightness_boost: Factor to increase brightness (1.0 = no change, >1.0 = brighter)
         contrast_boost: Factor to increase contrast (1.0 = no change, >1.0 = more contrast)
         invert_chars: Whether to invert the character brightness mapping
@@ -94,7 +105,7 @@ def img_to_ascii(
         for x in range(ascii_width):
             # Get pixel values
             brightness = img_gray.getpixel((x, y))
-            char = get_brightness_char(brightness, detailed_chars, invert_chars)
+            char = get_brightness_char(brightness, char_style, invert_chars)
 
             if colored:
                 r, g, b = img_rgb.getpixel((x, y))

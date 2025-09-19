@@ -44,7 +44,7 @@ character_poses = [
 print("\n=== Simple 2-Pose Demo (Detailed) ===")
 print("Creating a simple animation between just 2 poses...")
 
-base_red = "images/Red.jpeg"
+base_red = "images/Comp.jpg"
 
 # Generate 2 contrasting poses
 print("Generating pose 1...")
@@ -62,18 +62,28 @@ pose3 = generate_character_pose(
 )
 
 pose4 = generate_character_pose(
-    base_red, "surprised face", save_path="images/red_simple_pose4.png"
+    # base_red, "surprised face", save_path="images/red_simple_pose4.png"
+    base_red,
+    "surprised face, tongue out",
+    save_path="images/red_simple_pose4.png",
 )
+
+# %%
 
 if pose1 and pose2:
     print("\n" + "=" * 40)
     print("Original poses:")
     print("=" * 40)
-    print("Pose 1: Arms crossed, serious")
+    print("Pose 1: Eyes closed")
     display(pose1)
 
-    print("Pose 2: Thumbs up, smiling")
+    print("Pose 2: Eyes look to the right")
     display(pose2)
+    print("Pose 3: Eyes looking up")
+    display(pose3)
+    print("Pose 4: Surprised face")
+    display(pose4)
+    # %%
 
     # Create interpolated frames
     from ascii_agent_hackathon.img_to_ascii import (
@@ -82,7 +92,7 @@ if pose1 and pose2:
     )
 
     interpolated = create_interpolated_frames(
-        [pose1, pose2, pose3, pose4], frames_between=6, loop_back=True
+        [pose1, pose2, pose3, pose4], frames_between=6, loop_back=True, debug=True
     )
 
     print(f"\n" + "=" * 40)
@@ -106,7 +116,7 @@ if pose1 and pose2:
     print("\nUsing ultra-smooth ANSI animation...")
     display_ultra_smooth_ascii_animation(
         interpolated,
-        ascii_width=100,
+        ascii_width=120,
         fps=10.0,
         loop_count=4,
         colored=True,

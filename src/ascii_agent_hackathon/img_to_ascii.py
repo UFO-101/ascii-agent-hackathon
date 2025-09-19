@@ -454,7 +454,7 @@ def interpolate_images(
 
 
 def create_interpolated_frames(
-    poses: List[Image.Image], frames_between: int = 5, loop_back: bool = True
+    poses: List[Image.Image], frames_between: int = 5, loop_back: bool = True, debug: bool = False
 ) -> List[Image.Image]:
     """
     Create interpolated frames between a set of pose images.
@@ -463,6 +463,7 @@ def create_interpolated_frames(
         poses: List of pose images to interpolate between
         frames_between: Number of interpolated frames to create between each pair
         loop_back: Whether to interpolate back to the first pose at the end
+        debug: If True, prints frame sequence information
 
     Returns:
         List of all frames including original poses and interpolated frames
@@ -481,8 +482,19 @@ def create_interpolated_frames(
     if loop_back:
         pose_pairs.append((poses[-1], poses[0]))
 
+    if debug:
+        print(f"Creating interpolation with {len(poses)} poses, {frames_between} frames between each")
+        print(f"Pose pairs: {len(pose_pairs)} pairs")
+        if loop_back:
+            print("Loop back: YES - will return to first pose")
+        else:
+            print("Loop back: NO - will end on last pose")
+
     # Generate interpolated frames for each pair
-    for start_pose, end_pose in pose_pairs:
+    for pair_idx, (start_pose, end_pose) in enumerate(pose_pairs):
+        if debug:
+            print(f"Processing pair {pair_idx + 1}/{len(pose_pairs)}")
+
         # Add the starting pose
         all_frames.append(start_pose)
 
@@ -492,9 +504,20 @@ def create_interpolated_frames(
             interpolated = interpolate_images(start_pose, end_pose, alpha)
             all_frames.append(interpolated)
 
-    # Add the final pose (unless we're looping back)
-    if not loop_back:
+    # Always add the final pose to complete the cycle
+    if loop_back:
+        # When looping back, add the first pose again to complete the cycle
+        all_frames.append(poses[0])
+        if debug:
+            print("Added final frame: original first pose (completes loop)")
+    else:
+        # When not looping, add the final pose
         all_frames.append(poses[-1])
+        if debug:
+            print("Added final frame: last pose")
+
+    if debug:
+        print(f"Total frames created: {len(all_frames)}")
 
     return all_frames
 

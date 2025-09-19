@@ -16,3 +16,5 @@ wheels/
 
 # Image cache
 .img_cache/
+
+/images/

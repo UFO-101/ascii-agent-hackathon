@@ -1,4 +1,7 @@
-from typing import Optional, Tuple
+import time
+import os
+from typing import Optional, Tuple, Union, List
+from IPython.display import clear_output, display
 from PIL import Image, ImageEnhance
 
 
@@ -40,7 +43,7 @@ def get_brightness_char(brightness: int, style: str = "mixed", invert: bool = Fa
 
 
 def img_to_ascii(
-    img_path: str,
+    img_source: Union[str, Image.Image],
     ascii_width: int = 200,
     ascii_height: int = 200,
     colored: bool = True,
@@ -54,7 +57,7 @@ def img_to_ascii(
     Convert an image to ASCII art.
 
     Args:
-        img_path: Path to the input image
+        img_source: Either a path to the input image or a PIL Image object
         ascii_width: Width of the ASCII output in characters
         ascii_height: Height of the ASCII output in characters (ignored if preserve_aspect_ratio=True)
         colored: Whether to use ANSI color codes for colored output
@@ -68,7 +71,12 @@ def img_to_ascii(
         ASCII art representation of the image
     """
     try:
-        img = Image.open(img_path)
+        if isinstance(img_source, str):
+            img = Image.open(img_source)
+        elif isinstance(img_source, Image.Image):
+            img = img_source
+        else:
+            return f"Error: Invalid image source type: {type(img_source)}"
     except Exception as e:
         return f"Error opening image: {e}"
 
@@ -129,3 +137,115 @@ def img_to_ascii(
         ascii_str += "\033[0m"
 
     return ascii_str
+
+
+def display_ascii_animation(
+    frames: List[Union[str, Image.Image]],
+    ascii_width: int = 80,
+    ascii_height: int = 40,
+    fps: float = 10.0,
+    loop: bool = True,
+    loop_count: int = 3,
+    colored: bool = True,
+    char_style: str = "blocks",
+    brightness_boost: float = 1.5,
+    contrast_boost: float = 1.2,
+    clear_terminal: bool = False
+) -> None:
+    """
+    Display a sequence of images as an ASCII animation.
+
+    Args:
+        frames: List of image paths or PIL Image objects to animate
+        ascii_width: Width of ASCII frames in characters
+        ascii_height: Height of ASCII frames (ignored if preserve_aspect_ratio=True in conversion)
+        fps: Frames per second for animation playback
+        loop: Whether to loop the animation
+        loop_count: Number of times to loop (if loop=True)
+        colored: Whether to use colored ASCII art
+        char_style: Character style - "blocks", "ascii", or "mixed"
+        brightness_boost: Brightness adjustment factor
+        contrast_boost: Contrast adjustment factor
+        clear_terminal: If True, clears entire terminal; if False, uses IPython clear_output
+    """
+    if not frames:
+        print("No frames to animate!")
+        return
+
+    # Pre-convert all frames to ASCII to avoid conversion delay during playback
+    print(f"Converting {len(frames)} frames to ASCII...")
+    ascii_frames = []
+    for i, frame in enumerate(frames):
+        print(f"Processing frame {i+1}/{len(frames)}...", end='\r')
+        ascii_frame = img_to_ascii(
+            frame,
+            ascii_width=ascii_width,
+            ascii_height=ascii_height,
+            colored=colored,
+            preserve_aspect_ratio=True,
+            char_style=char_style,
+            brightness_boost=brightness_boost,
+            contrast_boost=contrast_boost
+        )
+        ascii_frames.append(ascii_frame)
+
+    print("\nStarting animation playback...")
+    time.sleep(1)  # Brief pause before starting
+
+    frame_delay = 1.0 / fps
+    loops_completed = 0
+
+    try:
+        while True:
+            for frame_num, ascii_frame in enumerate(ascii_frames):
+                if clear_terminal:
+                    # Clear entire terminal screen
+                    os.system('clear' if os.name == 'posix' else 'cls')
+                else:
+                    # Use IPython's clear_output for Jupyter environments
+                    clear_output(wait=True)
+
+                # Display the frame
+                print(f"Frame {frame_num + 1}/{len(frames)} | Loop {loops_completed + 1}/{loop_count if loop else 1}")
+                print(ascii_frame)
+
+                # Wait for next frame
+                time.sleep(frame_delay)
+
+            loops_completed += 1
+
+            if not loop or (loop_count > 0 and loops_completed >= loop_count):
+                break
+
+        print(f"\nAnimation complete! Played {loops_completed} loop(s).")
+
+    except KeyboardInterrupt:
+        print("\nAnimation interrupted by user.")
+
+
+def create_ascii_animation_frames(
+    images: List[Union[str, Image.Image]],
+    ascii_width: int = 80,
+    **kwargs
+) -> List[str]:
+    """
+    Pre-convert images to ASCII frames for animation.
+
+    Args:
+        images: List of image paths or PIL Image objects
+        ascii_width: Width of ASCII output
+        **kwargs: Additional arguments to pass to img_to_ascii
+
+    Returns:
+        List of ASCII art strings
+    """
+    ascii_frames = []
+    for img in images:
+        ascii_frame = img_to_ascii(
+            img,
+            ascii_width=ascii_width,
+            preserve_aspect_ratio=True,
+            **kwargs
+        )
+        ascii_frames.append(ascii_frame)
+    return ascii_frames

@@ -148,7 +148,7 @@ if pose1 and pose2:
     print(f"\n🎭 Starting ASCII animation with speech bubble: '{user_text}'...")
     display_ultra_smooth_ascii_animation(
         interpolated,
-        ascii_width=100,
+        ascii_width=120,
         fps=10.0,
         loop_count=4,
         colored=True,
